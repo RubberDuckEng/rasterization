@@ -37,7 +37,7 @@ void drawLine(Pixels pixels, Offset start, Offset end, Color color) {
   // handle first endpoint
   var xEnd = start.dx.round();
   var yEnd = start.dy + gradient * (xEnd - start.dx);
-  var xGap = fpart(start.dx + 0.5);
+  var xGap = rfpart(start.dx + 0.5);
   final xPixel1 = xEnd; // this will be used in the main loop
   final yPixel1 = yEnd.floor();
   // TODO(steep):
@@ -53,7 +53,7 @@ void drawLine(Pixels pixels, Offset start, Offset end, Color color) {
   // handle second endpoint
   xEnd = end.dx.round();
   yEnd = end.dy + gradient * (xEnd - end.dx);
-  xGap = fpart(end.dx + 0.5);
+  xGap = rfpart(end.dx + 0.5);
   final xPixel2 = xEnd; // this will be used in the main loop
   final yPixel2 = yEnd.floor();
   // TODO(steep):
@@ -79,7 +79,7 @@ void drawLine(Pixels pixels, Offset start, Offset end, Color color) {
     y += gradient;
   }
 }
-
+z``
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
