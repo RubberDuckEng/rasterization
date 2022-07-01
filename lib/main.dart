@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// import 'dart:math' as math;
 
 void main() {
   runApp(const MyApp());
@@ -10,6 +11,55 @@ double fpart(double x) {
 
 double rfpart(double x) {
   return 1 - fpart(x);
+}
+
+void drawCircle(Pixels pixels, Offset origin, double radius, Color color) {
+  final int r = radius.round();
+  // for (int i = 0; i < 10; i++) {
+  //   pixels.plot(x.round(), x.round(), color, 1.0);
+  //   final yNext = y + 1; // math.sqrt((y * y + 2 * y + 1).abs());
+  //   final xNext = math.sqrt((r * r - yNext * yNext).abs());
+  //   // final xNext = math.sqrt((x * x - 2 * y - 1).abs());
+  //   // final xNext = math.sqrt((r * r - y * y - 2 * y - 1).abs());
+
+  //   x = xNext;
+  //   y = yNext;
+  //   // final y_n = math.sqrt(y + 1)
+  // }
+
+  void plot1(int x, int y) {
+    pixels.plot(x + origin.dx.round(), y + origin.dx.round(), color, 1.0);
+  }
+
+  void plot8(int x, int y) {
+    plot1(x, y);
+    plot1(-x, y);
+    plot1(x, -y);
+    plot1(-x, -y);
+    plot1(y, x);
+    plot1(-y, x);
+    plot1(y, -x);
+    plot1(-y, -x);
+  }
+
+  int rsSquared = r * r * 4;
+  int xsSquared = 0;
+  int ysSquared_m1 = rsSquared - 2 * r + 1;
+  int x = 0;
+  int y = r;
+  plot8(x, y);
+  while (x <= y) {
+    /* advance to the right */
+    xsSquared = xsSquared + 8 * x + 4;
+    ++x;
+    /* calculate new Yc */
+    int yCandidate_s_Squared = rsSquared - xsSquared;
+    if (yCandidate_s_Squared < ysSquared_m1) {
+      ysSquared_m1 = ysSquared_m1 - 8 * y + 4;
+      --y;
+    }
+    plot8(x, y);
+  }
 }
 
 // Test cases
@@ -79,20 +129,21 @@ void drawLine(Pixels pixels, Offset start, Offset end, Color color) {
     y += gradient;
   }
 }
-z``
+
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    var pixels = Pixels.filled(10, 10, Colors.white);
+    var pixels = Pixels.filled(100, 100, Colors.white);
     // const start = Offset(1.2, 2.3);
     // const end = Offset(7.4, 6.6);
-    const start = Offset(0.4, 1.0);
-    const end = Offset(7.4, 2.0);
-    drawLine(pixels, start, end, Colors.blue.shade500);
+    const start = Offset(50.0, 50.0);
+    // const end = Offset(7.4, 2.0);
+    // drawLine(pixels, start, end, Colors.blue.shade500);
+    drawCircle(pixels, start, 20.0, Colors.blue.shade500);
     return MaterialApp(
-      home: PixelView(pixels: pixels, start: start, end: end),
+      home: PixelView(pixels: pixels),
     );
   }
 }
@@ -152,20 +203,16 @@ class Pixels {
 }
 
 class PixelView extends StatelessWidget {
-  const PixelView(
-      {Key? key, required this.pixels, required this.start, required this.end})
-      : super(key: key);
+  const PixelView({Key? key, required this.pixels}) : super(key: key);
 
   final Pixels pixels;
-  final Offset start;
-  final Offset end;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: AspectRatio(
         aspectRatio: 1.0,
-        child: CustomPaint(painter: PixelsPainter(pixels, start, end)),
+        child: CustomPaint(painter: PixelsPainter(pixels)),
       ),
     );
   }
@@ -173,10 +220,8 @@ class PixelView extends StatelessWidget {
 
 class PixelsPainter extends CustomPainter {
   final Pixels pixels;
-  final Offset start;
-  final Offset end;
 
-  PixelsPainter(this.pixels, this.start, this.end);
+  PixelsPainter(this.pixels);
 
   Rect rectForPosition(Position position, Size cell) {
     return Rect.fromLTWH(position.x * cell.width, position.y * cell.height,
@@ -189,6 +234,20 @@ class PixelsPainter extends CustomPainter {
 
   Offset localToCanvas(Offset offset, Size cell) {
     return Offset(offset.dx * cell.width, offset.dy * cell.height);
+  }
+
+  void paintGrid(Canvas canvas, Size cellSize) {
+    final gridPaint = Paint();
+    gridPaint.color = Colors.black87;
+    gridPaint.strokeWidth = 2.0;
+    for (int i = 0; i < pixels.width; ++i) {
+      canvas.drawLine(offsetForPosition(Position(i, 0), cellSize),
+          offsetForPosition(Position(i, pixels.height), cellSize), gridPaint);
+    }
+    for (int j = 1; j < pixels.height; ++j) {
+      canvas.drawLine(offsetForPosition(Position(0, j), cellSize),
+          offsetForPosition(Position(pixels.width, j), cellSize), gridPaint);
+    }
   }
 
   @override
@@ -204,26 +263,15 @@ class PixelsPainter extends CustomPainter {
         canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
       }
     }
-    // grid
-    final gridPaint = Paint();
-    gridPaint.color = Colors.black87;
-    gridPaint.strokeWidth = 2.0;
-    for (int i = 0; i < pixels.width; ++i) {
-      canvas.drawLine(offsetForPosition(Position(i, 0), cellSize),
-          offsetForPosition(Position(i, pixels.height), cellSize), gridPaint);
-    }
-    for (int j = 1; j < pixels.height; ++j) {
-      canvas.drawLine(offsetForPosition(Position(0, j), cellSize),
-          offsetForPosition(Position(pixels.width, j), cellSize), gridPaint);
-    }
+    // paintGrid(canvas, cellSize);
 
     // draw dots?
     // draw line
-    final linePaint = Paint();
-    linePaint.color = Colors.pink.shade500;
-    linePaint.strokeWidth = 2.0;
-    canvas.drawLine(localToCanvas(start, cellSize),
-        localToCanvas(end, cellSize), linePaint);
+    // final linePaint = Paint();
+    // linePaint.color = Colors.pink.shade500;
+    // linePaint.strokeWidth = 2.0;
+    // canvas.drawLine(localToCanvas(start, cellSize),
+    //     localToCanvas(end, cellSize), linePaint);
   }
 
   @override
