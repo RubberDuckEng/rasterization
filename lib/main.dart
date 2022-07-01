@@ -15,17 +15,6 @@ double rfpart(double x) {
 
 void drawCircle(Pixels pixels, Offset origin, double radius, Color color) {
   final int r = radius.round();
-  // for (int i = 0; i < 10; i++) {
-  //   pixels.plot(x.round(), x.round(), color, 1.0);
-  //   final yNext = y + 1; // math.sqrt((y * y + 2 * y + 1).abs());
-  //   final xNext = math.sqrt((r * r - yNext * yNext).abs());
-  //   // final xNext = math.sqrt((x * x - 2 * y - 1).abs());
-  //   // final xNext = math.sqrt((r * r - y * y - 2 * y - 1).abs());
-
-  //   x = xNext;
-  //   y = yNext;
-  //   // final y_n = math.sqrt(y + 1)
-  // }
 
   void plot1(int x, int y) {
     pixels.plot(x + origin.dx.round(), y + origin.dx.round(), color, 1.0);
@@ -42,20 +31,22 @@ void drawCircle(Pixels pixels, Offset origin, double radius, Color color) {
     plot1(-y, -x);
   }
 
-  int rsSquared = r * r * 4;
-  int xsSquared = 0;
-  int ysSquared_m1 = rsSquared - 2 * r + 1;
+  int rSquaredQuad = r * r * 4; // 4(2r)^2
+  int xSquaredQuad = 0;
+  int ySquaredThresholdQuad = rSquaredQuad - 2 * r + 1; // 4(r^2 - .5r + 0.25)
   int x = 0;
   int y = r;
   plot8(x, y);
   while (x <= y) {
     /* advance to the right */
-    xsSquared = xsSquared + 8 * x + 4;
+    xSquaredQuad = xSquaredQuad + 8 * x + 4; // 4(x + 1)(x + 1)
     ++x;
-    /* calculate new Yc */
-    int yCandidate_s_Squared = rsSquared - xsSquared;
-    if (yCandidate_s_Squared < ysSquared_m1) {
-      ysSquared_m1 = ysSquared_m1 - 8 * y + 4;
+    // In the 4x space, compute the new Y^2 using the circle equation.
+    int yCandidateSquaredQuad = rSquaredQuad - xSquaredQuad;
+    // Is the Y candidate closer to the upper or lower pixel?
+    if (yCandidateSquaredQuad < ySquaredThresholdQuad) {
+      ySquaredThresholdQuad =
+          ySquaredThresholdQuad - 8 * y + 4; // 4(y - 1)(y - 1)
       --y;
     }
     plot8(x, y);
@@ -130,8 +121,15 @@ void drawLine(Pixels pixels, Offset start, Offset end, Color color) {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  double radius = 5.0;
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +139,25 @@ class MyApp extends StatelessWidget {
     const start = Offset(50.0, 50.0);
     // const end = Offset(7.4, 2.0);
     // drawLine(pixels, start, end, Colors.blue.shade500);
-    drawCircle(pixels, start, 20.0, Colors.blue.shade500);
+    drawCircle(pixels, start, radius, Colors.blue.shade500);
     return MaterialApp(
-      home: PixelView(pixels: pixels),
+      home: Material(
+        child: Stack(
+          children: [
+            PixelView(pixels: pixels),
+            Slider(
+              value: radius,
+              min: 0.0,
+              max: 30.0,
+              onChanged: (double value) {
+                setState(() {
+                  radius = value;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
